@@ -1,0 +1,51 @@
+{
+  "Percona Server for MySQL": {
+    "components": [
+      "percona-server-server",
+      "percona-server-mysql-shell",
+      "percona-orchestrator",
+      "percona-toolkit",
+      "percona-xtrabackup-80",
+      "proxysql2"
+    ]
+  },
+  "Percona Distribution for MySQL (PXC)": {
+    "components": [
+      "percona-xtradb-cluster-full",
+      "proxysql2",
+      "percona-xtrabackup-80",
+      "percona-haproxy",
+      "percona-toolkit",
+      "percona-replication-manager"
+    ]
+  },
+  "Percona Distribution for MongoDB": {
+    "components": [
+      "percona-server-mongodb-server",
+      "percona-backup-mongodb"
+    ]
+  },
+  "Percona Distribution for PostgreSQL": {
+    "components": [
+      "percona-postgresql{major}-server",
+      "postgresql-commons",
+      "percona-pgbackrest",
+      "pg_stat_monitor",
+      "percona-pg_repack{major}",
+      "percona-pgaudit{major}",
+      "percona-patroni",
+      "percona-pgaudit{major}_set_user",
+      "percona-pgbadger",
+      "percona-pgbouncer",
+      "percona-pgpool-II-pg{major}",
+      "percona-postgis33_{major}",
+      "percona-wal2json",
+      "percona-haproxy",
+      "etcd",
+      "python-etcd",
+      "percona-pg_gather",
+      "percona-pgvector"
+    ]
+  }
+}
+
