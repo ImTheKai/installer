@@ -179,13 +179,13 @@ def install_components(selected_components):
         print(f"Failed to install components: {str(e)}")
 
 def run_cli(args):
-     """
-    Handle CLI mode execution with parsed arguments.
-    """
-
-    if not args:  # Check if args is None or empty
+    # Check if args is None or empty
+    if not args:  
         interactive_cli_mode()
 
+    """
+    Handle CLI mode execution with parsed arguments.
+    """
     repository = args.get('repository')
     product = args.get('product')
     components = args.get('components', [])
@@ -197,6 +197,11 @@ def run_cli(args):
         print(f"Repository: {repository}")
         print(f"Product: {product}")
         print(f"Components: {components}")
+
+    # Perform the installation logic
+    print(f"Starting installation for repository: {repository}, product: {product}, components: {components}.")
+    print("DEMO ONLY - NOT IMPLEMENTED YET")
+    # Add actual installation steps here
 
 def interactive_cli_mode():
     """
