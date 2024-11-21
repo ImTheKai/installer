@@ -23,3 +23,10 @@ This installer allows you to install Percona software distributions with ease. I
 - Percona Distribution for MySQL (PXC)
 - Percona Distribution for MongoDB
 - Percona Distribution for PostgreSQL
+
+
+### Docker way for testing
+```bash
+docker build -t percona_installer .
+docker run --rm -it percona_installer
+```
