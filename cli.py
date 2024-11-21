@@ -24,7 +24,9 @@ REPO_TYPES = ["release", "testing", "experimental"]
 
 def detect_os():
     """
-    Detect the operating system and return the appropriate package manager.
+    Detect the operating system and calls install_percona_release() with the appropriate package manager.
+    After the installation of percona_release it returns the appropriate package manager.
+    Supports popular Linux distributions like Ubuntu, Debian, CentOS, Rocky, AlmaLinux, Fedora, etc.
     """
     try:
         if os.path.exists("/etc/os-release"):
@@ -32,10 +34,13 @@ def detect_os():
                 os_release = file.read().lower()
 
             if "ubuntu" in os_release or "debian" in os_release:
+                install_percona_release('apt-get')
                 return "apt-get"
             elif "centos" in os_release or "red hat" in os_release or "rocky" in os_release or "alma" in os_release:
+                install_percona_release('yum')
                 return "yum"
             elif "fedora" in os_release:
+                install_percona_release('dnf')
                 return "dnf"
             else:
                 raise Exception("Unsupported Linux distribution detected in /etc/os-release.")
@@ -185,6 +190,61 @@ def select_repo_type():
         print("Invalid selection.")
         return None
 
+def install_percona_release(package_manager):
+    """
+    Installs percona-release using the appropriate package manager based on the provided argument.
+    """
+    try:
+        print(f"Installing percona-release using {package_manager}...")
+        if package_manager == 'apt-get':
+            # For Debian-based systems (apt-get)
+            subprocess.run(
+                ["wget", "https://repo.percona.com/apt/percona-release_latest.generic_all.deb", "-O", "/tmp/percona-release.deb"],
+                check=True
+            )
+            subprocess.run(["sudo", "dpkg", "-i", "/tmp/percona-release.deb"], check=True)
+            subprocess.run(["sudo", "apt-get", "update"], check=True)
+
+        elif package_manager == 'yum':
+            # For RHEL-based systems (yum)
+            subprocess.run(
+                ["sudo", "yum", "install", "-y", "https://repo.percona.com/yum/percona-release-latest.noarch.rpm"],
+                check=True
+            )
+            subprocess.run(["sudo", "yum", "update", "-y"], check=True)
+
+        elif package_manager == 'dnf':
+            # Fedora-based system (dnf)
+            subprocess.run(
+                ["sudo", "dnf", "install", "-y", "https://repo.percona.com/yum/percona-release-latest.noarch.rpm"],
+                check=True
+            )
+            subprocess.run(["sudo", "dnf", "update", "-y"], check=True)
+
+        else:
+            print(f"Unsupported package manager: {package_manager}")
+            sys.exit(1)
+
+        print("percona-release installation successful.")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error installing percona-release: {e}")
+        sys.exit(1)
+
+def enable_repository(distribution, version, repo_type):
+    """
+    Enable the repository for the selected distribution, version, and type.
+    """
+    try:
+        repo_name = f"{SUPPORTED_DISTROS[distribution]}{version}"
+        command = f"sudo percona-release enable {repo_name} {repo_type}"
+        logger.info(f"Enabling repository with command: {command}")
+        subprocess.run(command, shell=True, check=True)
+        print("Repository enabled successfully!")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error enabling repository: {str(e)}")
+        print(f"Failed to enable repository: {str(e)}")
+
 def list_components(distribution, version):
     """
     Load and display components for the selected distribution and version.
@@ -308,6 +368,10 @@ def run_cli(args=None):
         print(f"Selected Version: {version}")
         print(f"Selected Repository Type: {repo_type}")
         print(f"Selected Components: {', '.join(components) if components else 'None'}")
+
+        # Install percona_release if it isn't
+        print(f"Install percona_release")
+        install_percona_release()
 
         # Enable the repository
         print(f"Enabling repository for {distribution} {version} ({repo_type})...")
