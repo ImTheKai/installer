@@ -59,75 +59,12 @@ def detect_os():
         logger.error(f"Error detecting OS: {str(e)}")
         raise Exception(f"Unsupported OS: {str(e)}")
 
-def ensure_percona_release():
-    """
-    Ensure the 'percona-release' package is installed. If not, download and install it from Percona's repositories.
-    """
-    PERCONA_RELEASE_URLS = {
-        "deb": "https://repo.percona.com/apt/percona-release_1.0-29.generic_all.deb",
-        "rpm": "https://repo.percona.com/yum/percona-release-latest.noarch.rpm"
-    }
-
-    try:
-        # Check if the percona-release command exists
-        result = subprocess.run(
-            ["which", "percona-release"], 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
-            universal_newlines=True
-        )
-        if result.returncode == 0:
-            print("percona-release is already installed.")
-            logger.info("percona-release is already installed.")
-            return
-
-        # Detect the package manager
-        pkg_manager = detect_os()
-        if not pkg_manager:
-            raise Exception("Unable to determine package manager for installing percona-release.")
-
-        if pkg_manager == "apt-get":
-            # Download and install the .deb package
-            percona_release_url = PERCONA_RELEASE_URLS["deb"]
-            local_file = "/tmp/percona-release.deb"
-            print(f"Downloading {percona_release_url}...")
-            logger.info(f"Downloading {percona_release_url}...")
-            subprocess.run(["wget", "-O", local_file, percona_release_url], check=True)
-            print("Installing percona-release package...")
-            logger.info("Installing percona-release package...")
-            subprocess.run(["sudo", "apt-get", "install", "-y", local_file], check=True)
-            print("percona-release installed successfully.")
-            logger.info("percona-release installed successfully.")
-
-        elif pkg_manager in ["yum", "dnf"]:
-            # Directly install the .rpm package
-            percona_release_url = PERCONA_RELEASE_URLS["rpm"]
-            print(f"Installing {percona_release_url} using {pkg_manager}...")
-            logger.info(f"Installing {percona_release_url} using {pkg_manager}...")
-            subprocess.run(["sudo", pkg_manager, "install", "-y", percona_release_url], check=True)
-            print("percona-release installed successfully.")
-            logger.info("percona-release installed successfully.")
-
-        else:
-            raise Exception(f"Unsupported package manager: {pkg_manager}")
-
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error installing percona-release: {str(e)}")
-        print(f"Failed to install percona-release: {str(e)}")
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        print(f"Error: {str(e)}")
-        raise
-
 def enable_repository(distribution, version, repo_type):
     """
     Enable the repository for the selected distribution, version, and type.
     """
     try:
-        # Ensure percona-release is installed
-        ensure_percona_release()
-
+        detect_os() #Ensure to have the right package manager and percona-release installed
         # Build and execute the repository enable command
         repo_name = f"{SUPPORTED_DISTROS[distribution]}{version}"
         command = f"sudo percona-release enable {repo_name} {repo_type}"
@@ -297,7 +234,6 @@ def install_components(selected_components):
         return
 
     try:
-        ensure_percona_release()  # Ensure percona-release is installed before any installation
         pkg_manager = detect_os()
         if not pkg_manager:
             raise Exception("Unable to determine the package manager for your OS.")
