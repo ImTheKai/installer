@@ -5,15 +5,13 @@ This installer allows you to install Percona software distributions with ease. I
 
 ## Usage
 
-0. Clone or download this repository.
+0. Clone or download this repository into /opt/.
 1. ```bash
    pip3 install -r requirements.txt
    ```
-2. Run the installer:
-   ```bash
-   python main.py
-   ```
-3. Choose between CLI and GUI modes.
+2. copy percona_installer into /usr/bin
+3. execute percona_installer
+4. Choose between CLI and GUI modes.
 
 ### Requirements
 - Python 3.6+

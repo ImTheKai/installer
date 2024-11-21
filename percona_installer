@@ -1,0 +1,22 @@
+#!/bin/bash
+
+APP_DIR="/opt/installer"
+PYTHON_BIN="/usr/bin/python3"
+MAIN_SCRIPT="main.py"
+
+# Check if Python is installed
+if ! command -v $PYTHON_BIN &> /dev/null; then
+    echo "Error: Python3 is not installed. Please install Python3 first."
+    exit 1
+fi
+
+# Navigate to the application directory
+if [ ! -d "$APP_DIR" ]; then
+    echo "Error: Application directory not found at $APP_DIR."
+    echo "Ensure the application is installed correctly."
+    exit 1
+fi
+
+# Execute the application
+cd "$APP_DIR"
+$PYTHON_BIN $MAIN_SCRIPT "$@"
