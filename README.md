@@ -62,6 +62,37 @@ sudo percona_installer
 
 The installer provides a step-by-step process for selecting and installing the desired Percona distribution.
 
+### Running the Script in CLI Mode
+
+To run the script in CLI mode, use the following command:
+
+```bash
+python cli.py -r <repository> -p <product> -c <components> [--verbose]
+```
+
+Where:
+
+-r or --repository: Specify the repository (e.g., main, testing, experimental).
+-p or --product: Specify the product version (e.g., ppg-17.0, ps-80, pxc-80).
+-c or --components: Specify the components to be installed (e.g., percona-postgresql-17, percona-server-mongodb).
+--verbose: Enable verbose output to display detailed information during the installation process.
+
+#### Example Usage
+Install Percona PostgreSQL 17.0 from the Main repository:
+```bash
+python cli.py -r main -p ppg-17.0 -c percona-postgresql-17
+```
+
+Install Percona Server MongoDB from the Testing repository with verbose output:
+```bash
+python cli.py -r testing -p psmdb-80 -c percona-server-mongodb --verbose
+```
+
+Install Percona XtraDB Cluster 8.0 from the Experimental repository:
+```bash
+python cli.py -r experimental -p pxc-80 -c percona-xtradb-cluster-8.0
+``` 
+
 ### Dockerized Usage
 
 1. Build the Docker image:
