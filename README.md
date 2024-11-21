@@ -40,7 +40,7 @@ The **Percona Installer** is a Python-based utility that facilitates the install
 
 2. (Optional) Install required dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements.txt --break-system-packages
    ```
 
 3. Add the `percona_installer` script to `/usr/bin` for global access:
