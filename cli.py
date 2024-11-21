@@ -1,7 +1,8 @@
-import logging
-import json
-import subprocess
 import os
+import platform
+import logging
+import subprocess
+import json
 from fetch_versions import fetch_all_versions
 
 # Configure logging
@@ -24,7 +25,6 @@ REPO_TYPES = ["release", "testing", "experimental"]
 def detect_os():
     """
     Detect the operating system and return the appropriate package manager.
-    Supports popular Linux distributions like Ubuntu, Debian, CentOS, Rocky, AlmaLinux, Fedora, etc.
     """
     try:
         if os.path.exists("/etc/os-release"):
@@ -40,12 +40,12 @@ def detect_os():
             else:
                 raise Exception("Unsupported Linux distribution detected in /etc/os-release.")
 
-        os_id = platform.system().lower()
-        if "linux" in os_id:
+        os_name = platform.system().lower()
+        if "linux" in os_name:
             raise Exception("Minimal Linux distribution detected. Unable to determine package manager.")
-        elif os_id == "windows":
+        elif os_name == "windows":
             raise Exception("Windows is not supported.")
-        elif os_id == "darwin":
+        elif os_name == "darwin":
             raise Exception("MacOS is not supported.")
         else:
             raise Exception("Unsupported operating system.")
@@ -53,6 +53,88 @@ def detect_os():
     except Exception as e:
         logger.error(f"Error detecting OS: {str(e)}")
         raise Exception(f"Unsupported OS: {str(e)}")
+
+def ensure_percona_release():
+    """
+    Ensure the 'percona-release' package is installed. If not, download and install it from Percona's repositories.
+    """
+    PERCONA_RELEASE_URLS = {
+        "deb": "https://repo.percona.com/apt/percona-release_1.0-29.generic_all.deb",
+        "rpm": "https://repo.percona.com/yum/percona-release-latest.noarch.rpm"
+    }
+
+    try:
+        # Check if the percona-release command exists
+        result = subprocess.run(
+            ["which", "percona-release"], 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            universal_newlines=True
+        )
+        if result.returncode == 0:
+            print("percona-release is already installed.")
+            logger.info("percona-release is already installed.")
+            return
+
+        # Detect the package manager
+        pkg_manager = detect_os()
+        if not pkg_manager:
+            raise Exception("Unable to determine package manager for installing percona-release.")
+
+        if pkg_manager == "apt-get":
+            # Download and install the .deb package
+            percona_release_url = PERCONA_RELEASE_URLS["deb"]
+            local_file = "/tmp/percona-release.deb"
+            print(f"Downloading {percona_release_url}...")
+            logger.info(f"Downloading {percona_release_url}...")
+            subprocess.run(["wget", "-O", local_file, percona_release_url], check=True)
+            print("Installing percona-release package...")
+            logger.info("Installing percona-release package...")
+            subprocess.run(["sudo", "apt-get", "install", "-y", local_file], check=True)
+            print("percona-release installed successfully.")
+            logger.info("percona-release installed successfully.")
+
+        elif pkg_manager in ["yum", "dnf"]:
+            # Directly install the .rpm package
+            percona_release_url = PERCONA_RELEASE_URLS["rpm"]
+            print(f"Installing {percona_release_url} using {pkg_manager}...")
+            logger.info(f"Installing {percona_release_url} using {pkg_manager}...")
+            subprocess.run(["sudo", pkg_manager, "install", "-y", percona_release_url], check=True)
+            print("percona-release installed successfully.")
+            logger.info("percona-release installed successfully.")
+
+        else:
+            raise Exception(f"Unsupported package manager: {pkg_manager}")
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error installing percona-release: {str(e)}")
+        print(f"Failed to install percona-release: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        print(f"Error: {str(e)}")
+        raise
+
+def enable_repository(distribution, version, repo_type):
+    """
+    Enable the repository for the selected distribution, version, and type.
+    """
+    try:
+        # Ensure percona-release is installed
+        ensure_percona_release()
+
+        # Build and execute the repository enable command
+        repo_name = f"{SUPPORTED_DISTROS[distribution]}{version}"
+        command = f"sudo percona-release enable {repo_name} {repo_type}"
+        logger.info(f"Enabling repository with command: {command}")
+        subprocess.run(command, shell=True, check=True)
+        print("Repository enabled successfully!")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error enabling repository: {str(e)}")
+        print(f"Failed to enable repository: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        print(f"Error: {str(e)}")
 
 def list_distributions():
     """
@@ -102,20 +184,6 @@ def select_repo_type():
     else:
         print("Invalid selection.")
         return None
-
-def enable_repository(distribution, version, repo_type):
-    """
-    Enable the repository for the selected distribution, version, and type.
-    """
-    try:
-        repo_name = f"{SUPPORTED_DISTROS[distribution]}{version}"
-        command = f"sudo percona-release enable {repo_name} {repo_type}"
-        logger.info(f"Enabling repository with command: {command}")
-        subprocess.run(command, shell=True, check=True)
-        print("Repository enabled successfully!")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error enabling repository: {str(e)}")
-        print(f"Failed to enable repository: {str(e)}")
 
 def list_components(distribution, version):
     """
@@ -169,7 +237,11 @@ def install_components(selected_components):
         return
 
     try:
+        ensure_percona_release()  # Ensure percona-release is installed before any installation
         pkg_manager = detect_os()
+        if not pkg_manager:
+            raise Exception("Unable to determine the package manager for your OS.")
+
         command = f"sudo {pkg_manager} install -y " + " ".join(selected_components)
         logger.info(f"Installing components with command: {command}")
         print(f"Executing: {command}")
@@ -178,18 +250,14 @@ def install_components(selected_components):
     except subprocess.CalledProcessError as e:
         logger.error(f"Error installing components: {str(e)}")
         print(f"Failed to install components: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        print(f"Error: {str(e)}")
 
 def run_cli(args=None):
     """
     Run the CLI installer, optionally using provided arguments.
     """
-    PREFIX_TO_DISTRO = {  # Map prefixes to full distribution names
-        "pdps": "Percona Server for MySQL",
-        "pdpxc": "Percona Distribution for MySQL (PXC)",
-        "pdmdb": "Percona Distribution for MongoDB",
-        "ppg": "Percona Distribution for PostgreSQL"
-    }
-
     if args:
         # Argument-driven CLI mode
         product = args.get("product")
@@ -202,6 +270,13 @@ def run_cli(args=None):
         except ValueError:
             print(f"Error: Invalid product format '{product}'. Expected format: <prefix>-<version> (e.g., ppg-17.0).")
             return
+
+        PREFIX_TO_DISTRO = {
+            "pdps": "Percona Server for MySQL",
+            "pdpxc": "Percona Distribution for MySQL (PXC)",
+            "pdmdb": "Percona Distribution for MongoDB",
+            "ppg": "Percona Distribution for PostgreSQL"
+        }
 
         distribution = PREFIX_TO_DISTRO.get(prefix)
         if not distribution:
@@ -245,7 +320,7 @@ def run_cli(args=None):
         else:
             print("No components to install.")
     else:
-        # Interactive mode (unchanged)
+        # Interactive mode
         print("Welcome to the Percona Installer (CLI Mode)")
 
         list_distributions()
