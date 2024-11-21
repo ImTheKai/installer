@@ -178,7 +178,32 @@ def install_components(selected_components):
         logger.error(f"Error installing components: {str(e)}")
         print(f"Failed to install components: {str(e)}")
 
-def run_cli():
+def run_cli(args):
+    # Check if args is None or empty
+    if not args:  
+        interactive_cli_mode()
+
+    """
+    Handle CLI mode execution with parsed arguments.
+    """
+    repository = args.get('repository')
+    product = args.get('product')
+    components = args.get('components', [])
+    verbose = args.get('verbose', False)
+
+    # Handle verbose output
+    if verbose:
+        print(f"Running CLI mode with the following configuration:")
+        print(f"Repository: {repository}")
+        print(f"Product: {product}")
+        print(f"Components: {components}")
+
+    # Perform the installation logic
+    print(f"Starting installation for repository: {repository}, product: {product}, components: {components}.")
+    print("DEMO ONLY - NOT IMPLEMENTED YET")
+    # Add actual installation steps here
+
+def interactive_cli_mode():
     """
     Run the CLI installer.
     """
