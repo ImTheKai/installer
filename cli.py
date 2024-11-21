@@ -103,6 +103,49 @@ def select_repo_type():
         print("Invalid selection.")
         return None
 
+def install_percona_release():
+    """
+    Checks for the presence of percona-release. If not installed, it downloads and installs it.
+    """
+    try:
+        # Check if percona-release is installed
+        subprocess.run(["percona-release", "--version"], check=True, stdout=subprocess.PIPE)
+        print("percona-release is already installed.")
+    #except subprocess.CalledProcessError:
+    except FileNotFoundError:
+        print("percona-release is not installed. Attempting installation...")
+
+        try:
+            if subprocess.run(["which", "apt-get"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+                # For Debian-based systems
+                print("Detected Debian-based system. Installing with apt...")
+                subprocess.run(["sudo", "apt-get", "update"], check=True)
+                subprocess.run(["sudo", "apt-get", "install", "-y", "wget"], check=True)  # Ensure wget is available
+                subprocess.run(
+                    [
+                        "wget",
+                        "https://repo.percona.com/apt/percona-release_latest.generic_all.deb",
+                        "-O",
+                        "/tmp/percona-release.deb",
+                    ],
+                    check=True,
+                )
+                subprocess.run(["sudo", "dpkg", "-i", "/tmp/percona-release.deb"], check=True)
+                subprocess.run(["sudo", "apt-get", "update"], check=True)
+
+            elif subprocess.run(["which", "yum"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+                # For RHEL-based systems
+                print("Detected RHEL-based system. Installing with yum...")
+                subprocess.run(["sudo", "yum", "install", "-y", "https://repo.percona.com/yum/percona-release-latest.noarch.rpm"], check=True)
+                subprocess.run(["sudo", "yum", "update", "-y"], check=True)
+            else:
+                sys.exit("Unsupported package manager. Install percona-release manually.")
+
+            print("percona-release installed successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error occurred while installing percona-release: {e}")
+            sys.exit(1)
+
 def enable_repository(distribution, version, repo_type):
     """
     Enable the repository for the selected distribution, version, and type.
@@ -233,6 +276,10 @@ def run_cli(args=None):
         print(f"Selected Version: {version}")
         print(f"Selected Repository Type: {repo_type}")
         print(f"Selected Components: {', '.join(components) if components else 'None'}")
+
+        # Install percona_release if it isn't
+        print(f"Install percona_release")
+        install_percona_release()
 
         # Enable the repository
         print(f"Enabling repository for {distribution} {version} ({repo_type})...")
