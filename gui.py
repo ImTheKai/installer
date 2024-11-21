@@ -31,16 +31,14 @@ def detect_os():
         if os.path.exists("/etc/os-release"):
             with open("/etc/os-release", "r") as file:
                 os_release = file.read().lower()
-
-            if "ubuntu" in os_release or "debian" in os_release:
-                return "apt-get"
-            elif "centos" in os_release or "red hat" in os_release or "rocky" in os_release or "alma" in os_release:
-                return "yum"
-            elif "fedora" in os_release:
-                return "dnf"
-            else:
-                raise Exception("Unsupported Linux distribution detected in /etc/os-release.")
-
+                if "ubuntu" in os_release or "debian" in os_release:
+                    return "apt-get"
+                elif "centos" in os_release or "red hat" in os_release or "rocky" in os_release or "alma" in os_release:
+                    return "yum"
+                elif "fedora" in os_release:
+                    return "dnf"
+                else:
+                    raise Exception("Unsupported Linux distribution detected in /etc/os-release.")
         os_id = platform.system().lower()
         if "linux" in os_id:
             raise Exception("Minimal Linux distribution detected. Unable to determine package manager.")
@@ -54,6 +52,59 @@ def detect_os():
     except Exception as e:
         logger.error(f"Error detecting OS: {str(e)}")
         raise Exception(f"Unsupported OS: {str(e)}")
+
+def ensure_percona_release(output_callback):
+    """
+    Ensures the Percona Release package is downloaded and installed.
+    Provides real-time feedback via the provided callback.
+    """
+    try:
+        output_callback("Ensuring Percona Release package is installed...\n")
+        package_manager = detect_os()
+
+        if package_manager == "apt-get":
+            # Update package list
+            output_callback("Updating package list...\n")
+            subprocess.run(["sudo", "apt-get", "update"], check=True)
+
+            # Install wget if not present
+            output_callback("Checking for wget...\n")
+            subprocess.run(["sudo", "apt-get", "install", "-y", "wget"], check=True)
+
+            # Download the package
+            output_callback("Downloading Percona Release package...\n")
+            subprocess.run(["wget", "https://repo.percona.com/apt/percona-release_latest.$(lsb_release -sc)_all.deb"], check=True)
+
+            # Install the downloaded package
+            output_callback("Installing Percona Release package...\n")
+            subprocess.run(["sudo", "dpkg", "-i", "percona-release_latest.$(lsb_release -sc)_all.deb"], check=True)
+
+            # Update package list again
+            output_callback("Updating package list after installation...\n")
+            subprocess.run(["sudo", "apt-get", "update"], check=True)
+
+        elif package_manager in ["yum", "dnf"]:
+            # Install the percona-release package
+            output_callback("Installing Percona Release package...\n")
+            subprocess.run(["sudo", package_manager, "install", "-y", "https://repo.percona.com/yum/percona-release-latest.noarch.rpm"], check=True)
+
+            # Enable the Percona repository
+            output_callback("Enabling Percona repository...\n")
+            subprocess.run(["sudo", "percona-release", "enable", "original"], check=True)
+
+            # Update package list
+            output_callback("Updating package list...\n")
+            subprocess.run(["sudo", package_manager, "update"], check=True)
+
+        else:
+            output_callback(f"Unsupported package manager: {package_manager}\n")
+            return
+
+        output_callback("Percona Release package successfully installed.\n")
+    except subprocess.CalledProcessError as e:
+        output_callback(f"Error during installation: {str(e)}\n")
+    except Exception as e:
+        output_callback(f"Unexpected error: {str(e)}\n")
 
 class InstallerApp(npyscreen.NPSAppManaged):
     def onStart(self):
@@ -123,7 +174,7 @@ class MainForm(npyscreen.Form):
 
         # Pass selection to RepoSetupForm
         repo_form = self.parentApp.getForm("REPO_SETUP")
-        repo_form.setup(selected_distro[0], selected_version[0])
+        repo_form.setup(selected_distro[0], selected_version[0])  # Pass selected values
         self.parentApp.switchForm("REPO_SETUP")
 
     def exit_program(self):
@@ -133,6 +184,9 @@ class MainForm(npyscreen.Form):
 
 class RepoSetupForm(npyscreen.Form):
     def create(self):
+        self.selected_distro = None  # Initialize with None
+        self.selected_version = None  # Initialize with None
+
         self.add(npyscreen.TitleText, name="Setup Repository:")
 
         self.repo_type = self.add(
@@ -155,10 +209,13 @@ class RepoSetupForm(npyscreen.Form):
         self.exit_button = self.add(npyscreen.ButtonPress, name="Exit")
         self.exit_button.whenPressed = self.exit_program
 
-    def setup(self, distribution, version):
-        self.selected_distro = distribution
-        self.selected_version = version
-        logger.debug(f"RepoSetupForm initialized with distro: {distribution}, version: {version}")
+    def setup(self, selected_distro, selected_version):
+        """
+        Set up the form with data passed from the MainForm.
+        """
+        self.selected_distro = selected_distro
+        self.selected_version = selected_version
+        logger.info(f"RepoSetupForm initialized with distro: {selected_distro}, version: {selected_version}")
 
     def enable_repository(self):
         selected_repo_type = self.repo_type.get_selected_objects()
@@ -168,20 +225,29 @@ class RepoSetupForm(npyscreen.Form):
             return
 
         try:
+            # Ensure percona-release is installed
+            def output_callback(message):
+                logger.info(message)
+                npyscreen.notify_confirm(message, title="Info")
+            
+            ensure_percona_release(output_callback)
+            
+            # Enable the repository
             logger.info("Enabling repository...")
-            repo_command = self.get_repo_enable_command(self.selected_distro, self.selected_version, selected_repo_type[0])
+            repo_command = self.get_repo_enable_command(selected_repo_type[0])
             subprocess.run(repo_command, shell=True, check=True)
-            npyscreen.notify_confirm("Repository enabled successfully!", title="Success")
+            npyscreen.notify_confirm(f"Repository {selected_repo_type[0]} enabled successfully!", title="Success")
         except subprocess.CalledProcessError as e:
             npyscreen.notify_confirm(f"Failed to enable repository: {str(e)}", title="Error")
             logger.error(f"Error enabling repository: {str(e)}")
+        except Exception as e:
+            npyscreen.notify_confirm(f"Unexpected error: {str(e)}", title="Error")
+            logger.error(f"Unexpected error: {str(e)}")
 
-    def get_repo_enable_command(self, distribution, version, repo_type):
-        repo_name = f"{SUPPORTED_DISTROS[distribution]}{version}"
-        return f"sudo percona-release enable {repo_name} {repo_type}"
+    def get_repo_enable_command(self, repo_type):
+        return f"sudo percona-release enable {repo_type}"
 
     def next_screen(self):
-        # Pass control to ComponentSelectionForm
         components_form = self.parentApp.getForm("COMPONENTS")
         components_form.setup(self.selected_distro, self.selected_version)
         self.parentApp.switchForm("COMPONENTS")
@@ -193,6 +259,7 @@ class RepoSetupForm(npyscreen.Form):
         npyscreen.notify_confirm("Exiting the installer. Goodbye!", title="Exit")
         self.parentApp.setNextForm(None)
         self.parentApp.switchFormNow()
+
 
 class ComponentSelectionForm(npyscreen.Form):
     def create(self):
