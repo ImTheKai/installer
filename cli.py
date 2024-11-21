@@ -1,8 +1,7 @@
-import json
-import platform
-import os 
 import logging
-from fetch_versions import fetch_all_versions  # Import the dynamic fetching function
+import json
+import subprocess
+from fetch_versions import fetch_all_versions
 
 # Configure logging
 logging.basicConfig(
@@ -14,17 +13,12 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_DISTROS = {
     "Percona Server for MySQL": "pdps-",
-    "Percona XtraDB Cluster": "pdpxc-",
-    "Percona Server for MongoDB": "pdmdb-",
+    "Percona Distribution for MySQL (PXC)": "pdpxc-",
+    "Percona Distribution for MongoDB": "pdmdb-",
     "Percona Distribution for PostgreSQL": "ppg-"
 }
 
-JSON_KEY_MAPPING = {
-    "Percona Server for MySQL": "Percona Server for MySQL",
-    "Percona XtraDB Cluster": "Percona Distribution for MySQL (PXC)",
-    "Percona Server for MongoDB": "Percona Distribution for MongoDB",
-    "Percona Distribution for PostgreSQL": "Percona Distribution for PostgreSQL"
-}
+REPO_TYPES = ["release", "testing", "experimental"]
 
 def detect_os():
     """
@@ -32,7 +26,6 @@ def detect_os():
     Supports popular Linux distributions like Ubuntu, Debian, CentOS, Rocky, AlmaLinux, Fedora, etc.
     """
     try:
-        # Check /etc/os-release for detailed OS information
         if os.path.exists("/etc/os-release"):
             with open("/etc/os-release", "r") as file:
                 os_release = file.read().lower()
@@ -46,7 +39,6 @@ def detect_os():
             else:
                 raise Exception("Unsupported Linux distribution detected in /etc/os-release.")
 
-        # Fallback for non-Linux or minimal Linux distributions
         os_id = platform.system().lower()
         if "linux" in os_id:
             raise Exception("Minimal Linux distribution detected. Unable to determine package manager.")
@@ -61,106 +53,157 @@ def detect_os():
         logger.error(f"Error detecting OS: {str(e)}")
         raise Exception(f"Unsupported OS: {str(e)}")
 
-def load_components():
-    """Load and parse the components.json file."""
+def list_distributions():
+    """
+    Display available distributions.
+    """
+    print("Available Distributions:")
+    for i, distro in enumerate(SUPPORTED_DISTROS.keys(), start=1):
+        print(f"{i}. {distro}")
+
+def select_version(distribution):
+    """
+    Fetch and display versions for a selected distribution, and allow the user to select one.
+    """
+    prefix = SUPPORTED_DISTROS[distribution]
+    try:
+        all_versions = fetch_all_versions(prefix)
+        if not all_versions:
+            print("No versions available for the selected distribution.")
+            return None
+
+        print("Available Versions:")
+        for i, version in enumerate(all_versions, start=1):
+            print(f"{i}. {version}")
+
+        version_index = int(input("Select a version: ")) - 1
+        if 0 <= version_index < len(all_versions):
+            return all_versions[version_index]
+        else:
+            print("Invalid selection.")
+            return None
+    except Exception as e:
+        logger.error(f"Error fetching versions for {distribution}: {str(e)}")
+        print(f"Error fetching versions: {str(e)}")
+        return None
+
+def select_repo_type():
+    """
+    Display repository types and allow the user to select one.
+    """
+    print("Available Repository Types:")
+    for i, repo_type in enumerate(REPO_TYPES, start=1):
+        print(f"{i}. {repo_type}")
+
+    repo_index = int(input("Select a repository type: ")) - 1
+    if 0 <= repo_index < len(REPO_TYPES):
+        return REPO_TYPES[repo_index]
+    else:
+        print("Invalid selection.")
+        return None
+
+def enable_repository(distribution, version, repo_type):
+    """
+    Enable the repository for the selected distribution, version, and type.
+    """
+    try:
+        repo_name = f"{SUPPORTED_DISTROS[distribution]}{version}"
+        command = f"sudo percona-release enable {repo_name} {repo_type}"
+        logger.info(f"Enabling repository with command: {command}")
+        subprocess.run(command, shell=True, check=True)
+        print("Repository enabled successfully!")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error enabling repository: {str(e)}")
+        print(f"Failed to enable repository: {str(e)}")
+
+def list_components(distribution, version):
+    """
+    Load and display components for the selected distribution and version.
+    """
     try:
         with open("components.json", "r") as file:
             components_data = json.load(file)
-            logger.debug(f"Loaded components.json: {json.dumps(components_data, indent=2)}")
-            return components_data
+            components = components_data.get(distribution, {}).get("components", [])
+
+            # Replace {major} placeholder with major version
+            major_version = version.split(".")[0]
+            components = [
+                component.replace("{major}", major_version) if "{major}" in component else component
+                for component in components
+            ]
+
+            if not components:
+                print("No components available for the selected distribution.")
+                return None
+
+            print("Available Components:")
+            for i, component in enumerate(components, start=1):
+                print(f"{i}. {component}")
+            return components
     except FileNotFoundError:
         logger.error("components.json file is missing!")
-        print("Error: components.json file not found.")
-        exit(1)
+        print("Error: components.json not found.")
+        return None
     except json.JSONDecodeError as e:
         logger.error(f"Error parsing components.json: {str(e)}")
         print("Error: Failed to parse components.json.")
-        exit(1)
+        return None
 
-def run_cli():
-    """Run the CLI application."""
-    components_data = load_components()
+def select_components(components):
+    """
+    Allow the user to select components for installation.
+    """
+    print("Select components to install (comma-separated, e.g., 1,3,5):")
+    selection = input("Enter your selection: ")
+    selected_indices = [int(index.strip()) - 1 for index in selection.split(",") if index.strip().isdigit()]
+    selected_components = [components[i] for i in selected_indices if 0 <= i < len(components)]
+    return selected_components
 
-    print("Select the Percona Distribution to install:")
-    distributions = list(SUPPORTED_DISTROS.keys())
-    for idx, dist in enumerate(distributions, start=1):
-        print(f"{idx}. {dist}")
-
-    dist_choice = input("Enter the number corresponding to your choice: ").strip()
-    if not dist_choice.isdigit() or int(dist_choice) not in range(1, len(distributions) + 1):
-        print("Invalid choice. Exiting.")
-        return
-
-    selected_distro = distributions[int(dist_choice) - 1]
-    print(f"\nYou selected: {selected_distro}")
-
-    prefix = SUPPORTED_DISTROS[selected_distro]
-    try:
-        logger.debug(f"Fetching versions for prefix: {prefix}")
-        versions = fetch_all_versions(prefix)  # Dynamically fetch versions
-        logger.debug(f"Fetched versions for {selected_distro}: {versions}")
-    except Exception as e:
-        print(f"Error fetching versions: {str(e)}")
-        logger.error(f"Error fetching versions for {selected_distro}: {str(e)}")
-        return
-
-    if not versions:
-        print(f"No versions available for {selected_distro}. Exiting.")
-        return
-
-    print("\nAvailable Versions:")
-    for idx, version in enumerate(versions, start=1):
-        print(f"{idx}. {version}")
-
-    version_choice = input("Enter the number corresponding to the version you want: ").strip()
-    if not version_choice.isdigit() or int(version_choice) not in range(1, len(versions) + 1):
-        print("Invalid choice. Exiting.")
-        return
-
-    selected_version = versions[int(version_choice) - 1]
-    print(f"\nYou selected version: {selected_version}")
-
-    # Extract major version for PostgreSQL
-    major_version = selected_version.split(".")[0]
-    logger.debug(f"Extracted major version: {major_version}")
-
-    json_key = JSON_KEY_MAPPING.get(selected_distro, selected_distro)
-    components = components_data.get(json_key, {}).get("components", [])
-    if not components:
-        print(f"No components available for {selected_distro}. Exiting.")
-        return
-
-    # Replace {major} placeholder in components
-    components = [
-        component.replace("{major}", major_version) if "{major}" in component else component
-        for component in components
-    ]
-    logger.debug(f"Components after placeholder replacement: {components}")
-
-    print("\nAvailable Components:")
-    for idx, comp in enumerate(components, start=1):
-        print(f"{idx}. {comp}")
-
-    comp_choice = input("Enter the numbers of components to install (comma-separated, e.g., 1,2,3): ").strip()
-    selected_components = []
-    for num in comp_choice.split(","):
-        if num.strip().isdigit() and int(num.strip()) in range(1, len(components) + 1):
-            selected_components.append(components[int(num.strip()) - 1])
-
+def install_components(selected_components):
+    """
+    Build and execute the install command for the selected components.
+    """
     if not selected_components:
-        print("No components selected. Exiting.")
+        print("No components selected for installation.")
         return
-
-    print(f"\nSelected components for installation: {', '.join(selected_components)}")
 
     try:
         pkg_manager = detect_os()
-        install_command = f"sudo {pkg_manager} install -y " + " ".join(selected_components)
-        print(f"\nInstallation command: {install_command}")
-        logger.info(f"Built installation command: {install_command}")
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        logger.error(f"Error building installation command: {str(e)}")
-if __name__ == "__main__":
-    run_cli()
+        command = f"sudo {pkg_manager} install -y " + " ".join(selected_components)
+        logger.info(f"Installing components with command: {command}")
+        print(f"Executing: {command}")
+        subprocess.run(command, shell=True, check=True)
+        print("Components installed successfully!")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error installing components: {str(e)}")
+        print(f"Failed to install components: {str(e)}")
 
+def run_cli():
+    """
+    Run the CLI installer.
+    """
+    print("Welcome to the Percona Installer (CLI Mode)")
+
+    list_distributions()
+    distro_index = int(input("Select a distribution: ")) - 1
+    if not (0 <= distro_index < len(SUPPORTED_DISTROS)):
+        print("Invalid distribution selection.")
+        return
+
+    distribution = list(SUPPORTED_DISTROS.keys())[distro_index]
+    version = select_version(distribution)
+    if not version:
+        return
+
+    repo_type = select_repo_type()
+    if not repo_type:
+        return
+
+    enable_repository(distribution, version, repo_type)
+
+    components = list_components(distribution, version)
+    if not components:
+        return
+
+    selected_components = select_components(components)
+    install_components(selected_components)
