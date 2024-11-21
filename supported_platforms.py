@@ -1,22 +1,6 @@
+from shared import SUPPORTED_PLATFORMS, NORMALIZED_DISTROS
+
 import platform
-
-SUPPORTED_PLATFORMS = {
-    "Ubuntu": ["20.04", "22.04", "24.04"],
-    "Debian": ["11", "12"],
-    "Oracle Linux": ["8", "9"],
-    "Rocky Linux": ["8", "9"],
-    "AlmaLinux": ["8", "9"]
-}
-
-# Add normalization for known distro variations
-NORMALIZED_DISTROS = {
-    "oracle linux server": "Oracle Linux",
-    "oracle linux": "Oracle Linux",
-    "ubuntu": "Ubuntu",
-    "debian": "Debian",
-    "rocky": "Rocky Linux",
-    "almalinux": "AlmaLinux"
-}
 
 def normalize_distro_name(distro_name):
     """Normalize distro name to match supported platforms."""

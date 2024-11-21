@@ -1,15 +1,9 @@
+from shared import logger
+
 import re
 import requests
 from bs4 import BeautifulSoup
 import logging
-
-# Configure logging
-logging.basicConfig(
-    filename="debug.log",
-    level=logging.INFO,  # Adjust level based on your preference
-    format="%(asctime)s [%(levelname)s] %(message)s"
-)
-logger = logging.getLogger(__name__)
 
 INDEX_URL = "https://repo.percona.com/"
 INDEX_FILE = "index.html"

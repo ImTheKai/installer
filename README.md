@@ -1,7 +1,6 @@
-
 # Percona Installer
 
-The **Percona Installer** is a Python-based utility that facilitates the installation of Percona software distributions. It offers an interactive and user-friendly approach for installing popular Percona products like MySQL, PostgreSQL, and MongoDB on supported platforms.
+The **Percona Installer** is a Python-based utility designed to simplify the installation and configuration of Percona software distributions. It provides an intuitive CLI and GUI interface to set up repositories, install components, and configure Percona products on supported platforms.
 
 ---
 
@@ -13,24 +12,31 @@ The **Percona Installer** is a Python-based utility that facilitates the install
   - Percona Distribution for MongoDB
   - Percona Distribution for PostgreSQL
 - **Interactive installation process**:
-  - Provides an easy-to-use interface for selecting and installing Percona products.
+  - Step-by-step guidance through CLI or GUI interfaces.
+- **Command-line automation**:
+  - Supports argument-driven installation for scripting.
 - **Platform detection**:
-  - Ensures compatibility by identifying the operating system and distribution.
-- **Extensible architecture**:
-  - Modular design allows easy updates and customization.
+  - Automatically identifies the operating system and selects the appropriate package manager.
+- **Extensible design**:
+  - Modular architecture for adding new features or customizing behavior.
+- **Docker support**:
+  - Run the installer in a containerized environment.
 
 ---
 
 ## Prerequisites
 
-- Python 3.6 or higher.
-- `curses` library (required for GUI mode).
-- `git` (for cloning the repository).
-- Root or sudo access for installing Percona packages.
+- Python 3.6 or higher
+- Required Python libraries (see `requirements.txt`)
+- `curses` library (required for GUI mode)
+- `sudo` or root access for installing Percona packages
+- Internet connectivity for downloading dependencies and packages
 
 ---
 
 ## Installation
+
+### Clone the Repository
 
 1. Clone the repository:
    ```bash
@@ -38,7 +44,7 @@ The **Percona Installer** is a Python-based utility that facilitates the install
    cd /opt/installer/
    ```
 
-2. (Optional) Install required dependencies:
+2. Install required dependencies:
    ```bash
    sudo python3 -m pip install -r requirements.txt --break-system-packages
    ```
@@ -49,176 +55,149 @@ The **Percona Installer** is a Python-based utility that facilitates the install
    sudo chmod +x /usr/bin/percona_installer
    ```
 
+### Docker Installation
+
+1. Build the Docker image:
+   ```bash
+   docker build -t percona_installer_image .
+   ```
+
+2. Run the installer inside a container:
+   ```bash
+   docker run --rm -it percona_installer_image
+   ```
+
 ---
 
 ## Usage
 
-### Running the Installer
+### CLI Mode
 
-To execute the installer, run:
+Run the installer with command-line arguments for fully automated installation:
+
 ```bash
-sudo percona_installer
+python3 main.py -r <repository> -p <product> -c <components> [--verbose]
 ```
 
-The installer provides a step-by-step process for selecting and installing the desired Percona distribution.
+- **Arguments**:
+  - `-r, --repository`: Specify the repository type (`main`, `testing`, `experimental`).
+  - `-p, --product`: Specify the product and version (e.g., `ppg-17.0`, `ps-80`).
+  - `-c, --components`: List of components to install (comma-separated).
+  - `--verbose`: Enable verbose output for debugging.
 
-### Running the Script in CLI Mode
+#### Examples:
 
-To run the script in CLI mode, use the following command:
+1. Install Percona PostgreSQL 17.0:
+   ```bash
+   python3 main.py -r release -p ppg-17.0 -c percona-postgresql-17
+   ```
+
+2. Install Percona XtraDB Cluster 8.0:
+   ```bash
+   python3 main.py -r testing -p pxc-80 -c percona-xtradb-cluster-8.0 --verbose
+   ```
+
+### GUI Mode
+
+Run the installer in GUI mode:
 
 ```bash
-percona_installer -r <repository> -p <product> -c <components> [--verbose]
+python3 main.py --gui
 ```
 
-- Where:
-  - -r or --repository: Specify the repository (e.g., main, testing, experimental).
-  - -p or --product: Specify the product version (e.g., ppg-17.0, ps-80, pxc-80).
-  - -c or --components: Specify the components to be installed (e.g., percona-postgresql-17, percona-server-mongodb).
-  - --verbose: Enable verbose output to display detailed information during the installation process.
+The GUI mode provides a step-by-step interactive interface for selecting distributions, versions, and components.
 
-#### Example Usage
-Install Percona PostgreSQL 17.0 from the Main repository:
-```bash
-sudo percona_installer -r main -p ppg-17.0 -c percona-postgresql-17
+---
+
+## Components Configuration
+
+The `components.json` file defines the available components for each product. You can customize it to add, modify, or remove components.
+
+### Example `components.json`:
+```json
+{
+  "Percona Server for MySQL": {
+    "components": [
+      "percona-server-client",
+      "percona-server-server",
+      "percona-toolkit"
+    ]
+  },
+  "Percona Distribution for PostgreSQL": {
+    "components": [
+      "percona-postgresql",
+      "pg_stat_monitor"
+    ]
+  }
+}
 ```
 
-Install Percona Server MongoDB from the Testing repository with verbose output:
-```bash
-sudo percona_installer -r testing -p psmdb-80 -c percona-server-mongodb --verbose
-```
+---
 
-Install Percona XtraDB Cluster 8.0 from the Experimental repository:
-```bash
-sudo percona_installer -r experimental -p pxc-80 -c percona-xtradb-cluster-8.0
-``` 
+## Code Architecture
 
-### Dockerized Usage
+### **1. `main.py`**
+Handles the main execution flow, including CLI and GUI mode initialization.
 
-1. Build the Docker image:
-   ```bash
-   docker build -t percona_installer_image .
-   ```
+- **Functions**:
+  - `parse_arguments`: Parses command-line arguments.
+  - `main`: Entry point for the installer.
 
-2. Run the container:
-   ```bash
-   docker run --rm -it percona_installer_image
-   ```
+### **2. `cli.py`**
+Implements the command-line interface logic.
+
+- **Functions**:
+  - `run_cli`: Handles both argument-driven and interactive CLI modes.
+  - `enable_repository`: Enables the selected repository.
+  - `install_components`: Installs selected components.
+
+### **3. `gui.py`**
+Implements the GUI mode using `npyscreen`.
+
+- **Classes**:
+  - `InstallerApp`: Manages GUI forms and workflows.
+  - `MainForm`: Handles distribution and version selection.
+  - `RepoSetupForm`: Enables repositories for selected distributions.
+  - `ComponentSelectionForm`: Manages component selection and installation.
+
+### **4. `fetch_versions.py`**
+Fetches available versions for Percona products from the repository.
+
+- **Functions**:
+  - `fetch_all_versions`: Retrieves versions matching a product prefix.
+  - `download_repo_index`: Downloads the repository index page.
+
+### **5. `shared.py`**
+Contains shared utilities, constants, and helper functions.
+
+- **Functions**:
+  - `detect_os`: Identifies the operating system and package manager.
+  - `ensure_percona_release`: Installs the `percona-release` package.
+  - `build_repo_command`: Constructs commands for enabling repositories.
 
 ---
 
-## Code Overview
+## Troubleshooting
 
-The Percona Installer codebase is modular, with each module handling specific functionality. Below is a breakdown of the key files and their core functions:
+### Common Issues
 
-### **1. `percona_installer`**
-This is the main entry point for the installer. It orchestrates the installation process by calling the relevant modules and functions.
+1. **Missing `sudo`**:
+   - Ensure `sudo` is installed and in the system PATH.
+   - Use root privileges if `sudo` is unavailable.
 
-- **Key Functions**:
-  - **`main()`**:
-    - Entry point for the script.
-    - Initializes the installer and displays the menu.
-  - **`execute_installation()`**:
-    - Handles the installation process by calling appropriate product-specific functions.
-  - **`prompt_user()`**:
-    - Displays an interactive menu for the user to select a Percona distribution.
+2. **`curses` Library Errors**:
+   - Install the `curses` library for your Python version.
 
----
+3. **Network Errors**:
+   - Verify internet connectivity.
+   - Check firewall or proxy settings.
 
-### **2. `main.py`**
-This file contains the core logic for managing user interaction and installation workflows.
-
-- **Key Functions**:
-  - **`start_cli_mode()`**:
-    - Launches the command-line interface mode.
-  - **`start_gui_mode()`**:
-    - Launches the GUI mode using the `curses` library.
-  - **`install_product(product)`**:
-    - Initiates the installation of the selected product.
-  - **`validate_platform()`**:
-    - Checks the compatibility of the user’s system for the selected product.
+4. **Unsupported Distribution**:
+   - Ensure your Linux distribution is supported.
 
 ---
 
-### **3. `fetch_versions.py`**
-Responsible for fetching the latest available versions of Percona distributions.
-
-- **Key Functions**:
-  - **`fetch_product_versions(product)`**:
-    - Connects to the Percona repository to retrieve the latest versions of the selected product.
-  - **`parse_version_data(data)`**:
-    - Parses the retrieved data to extract version information.
-  - **`get_latest_version(product)`**:
-    - Returns the latest version of a specific product.
-
----
-
-### **4. `supported_platforms.py`**
-Handles platform detection and compatibility checks.
-
-- **Key Functions**:
-  - **`detect_platform()`**:
-    - Identifies the operating system and distribution (e.g., Ubuntu, CentOS).
-  - **`is_supported_platform(platform)`**:
-    - Verifies if the detected platform supports the selected Percona product.
-  - **`get_supported_products(platform)`**:
-    - Returns a list of products supported on the current platform.
-
----
-
-### **5. `gui.py`**
-Implements the GUI mode using the `curses` library for a console-based graphical interface.
-
-- **Key Functions**:
-  - **`render_menu(options)`**:
-    - Displays an interactive menu for the user to select an option.
-  - **`handle_input()`**:
-    - Captures user input and processes the selected option.
-  - **`render_product_details(product)`**:
-    - Displays detailed information about the selected product.
-
----
-
-### **6. `components.json`**
-A JSON file containing metadata about supported Percona products.
-
-- **Contents**:
-  - Product names.
-  - Supported versions.
-  - Platform compatibility.
-
----
-
-## Example Workflow
-
-### Direct Execution
-1. Run the script:
-   ```bash
-   ./percona_installer
-   ```
-
-2. Follow the prompts to select and install a Percona distribution.
-
-3. Verify the installation by running:
-   ```bash
-   percona --version
-   ```
-
-### Docker Usage
-1. Build the Docker image:
-   ```bash
-   docker build -t percona_installer_image .
-   ```
-
-2. Start the container:
-   ```bash
-   docker run --rm -it percona_installer_image
-   ```
-
-3. Use the installer inside the container.
-
----
-
-## Contributing
+## Contribution
 
 Contributions are welcome! Please follow these steps:
 1. Fork the repository.
