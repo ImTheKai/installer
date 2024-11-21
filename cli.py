@@ -20,7 +20,7 @@ SUPPORTED_DISTROS = {
     "Percona Distribution for PostgreSQL": "ppg-"
 }
 
-REPO_TYPES = ["release", "testing", "experimental"]
+REPO_TYPES = ["main", "testing", "experimental"]
 
 def detect_os():
     """
@@ -368,10 +368,6 @@ def run_cli(args=None):
         print(f"Selected Version: {version}")
         print(f"Selected Repository Type: {repo_type}")
         print(f"Selected Components: {', '.join(components) if components else 'None'}")
-
-        # Install percona_release if it isn't
-        print(f"Install percona_release")
-        install_percona_release()
 
         # Enable the repository
         print(f"Enabling repository for {distribution} {version} ({repo_type})...")
