@@ -34,13 +34,13 @@ The **Percona Installer** is a Python-based utility that facilitates the install
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/EvgeniyPatlan/installer.git
-   cd installer
+   sudo git clone https://github.com/EvgeniyPatlan/installer.git /opt/installer
+   cd /opt/installer/
    ```
 
 2. (Optional) Install required dependencies:
    ```bash
-   pip install -r requirements.txt --break-system-packages
+   sudo python3 -m pip install -r requirements.txt --break-system-packages
    ```
 
 3. Add the `percona_installer` script to `/usr/bin` for global access:
@@ -57,7 +57,7 @@ The **Percona Installer** is a Python-based utility that facilitates the install
 
 To execute the installer, run:
 ```bash
-percona_installer
+sudo percona_installer
 ```
 
 The installer provides a step-by-step process for selecting and installing the desired Percona distribution.
