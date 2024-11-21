@@ -1,6 +1,7 @@
 import logging
 import json
 import subprocess
+import os
 from fetch_versions import fetch_all_versions
 
 # Configure logging
@@ -55,7 +56,7 @@ def detect_os():
 
 def list_distributions():
     """
-    Display available distributions.
+    Display available distributions to the user.
     """
     print("Available Distributions:")
     for i, distro in enumerate(SUPPORTED_DISTROS.keys(), start=1):
@@ -63,7 +64,7 @@ def list_distributions():
 
 def select_version(distribution):
     """
-    Fetch and display versions for a selected distribution, and allow the user to select one.
+    Fetch and display available versions for a selected distribution, and allow user selection.
     """
     prefix = SUPPORTED_DISTROS[distribution]
     try:
@@ -89,7 +90,7 @@ def select_version(distribution):
 
 def select_repo_type():
     """
-    Display repository types and allow the user to select one.
+    Display repository types and allow user selection.
     """
     print("Available Repository Types:")
     for i, repo_type in enumerate(REPO_TYPES, start=1):
@@ -178,57 +179,95 @@ def install_components(selected_components):
         logger.error(f"Error installing components: {str(e)}")
         print(f"Failed to install components: {str(e)}")
 
-def run_cli(args):
-    # Check if args is None or empty
-    if not args:  
-        interactive_cli_mode()
-
+def run_cli(args=None):
     """
-    Handle CLI mode execution with parsed arguments.
+    Run the CLI installer, optionally using provided arguments.
     """
-    repository = args.get('repository')
-    product = args.get('product')
-    components = args.get('components', [])
-    verbose = args.get('verbose', False)
+    PREFIX_TO_DISTRO = {  # Map prefixes to full distribution names
+        "pdps": "Percona Server for MySQL",
+        "pdpxc": "Percona Distribution for MySQL (PXC)",
+        "pdmdb": "Percona Distribution for MongoDB",
+        "ppg": "Percona Distribution for PostgreSQL"
+    }
 
-    # Handle verbose output
-    if verbose:
-        print(f"Running CLI mode with the following configuration:")
-        print(f"Repository: {repository}")
-        print(f"Product: {product}")
-        print(f"Components: {components}")
+    if args:
+        # Argument-driven CLI mode
+        product = args.get("product")
+        if not product:
+            print("Error: Product is required (e.g., ppg-17.0, ps-80).")
+            return
 
-    # Perform the installation logic
-    print(f"Starting installation for repository: {repository}, product: {product}, components: {components}.")
-    print("DEMO ONLY - NOT IMPLEMENTED YET")
-    # Add actual installation steps here
+        try:
+            prefix, version = product.split("-", 1)
+        except ValueError:
+            print(f"Error: Invalid product format '{product}'. Expected format: <prefix>-<version> (e.g., ppg-17.0).")
+            return
 
-def interactive_cli_mode():
-    """
-    Run the CLI installer.
-    """
-    print("Welcome to the Percona Installer (CLI Mode)")
+        distribution = PREFIX_TO_DISTRO.get(prefix)
+        if not distribution:
+            print(f"Error: Invalid distribution prefix '{prefix}'.")
+            return
 
-    list_distributions()
-    distro_index = int(input("Select a distribution: ")) - 1
-    if not (0 <= distro_index < len(SUPPORTED_DISTROS)):
-        print("Invalid distribution selection.")
-        return
+        repo_type = args.get("repository")
+        if not repo_type or repo_type not in REPO_TYPES:
+            print(f"Error: Repository type is required and must be one of {REPO_TYPES}.")
+            return
 
-    distribution = list(SUPPORTED_DISTROS.keys())[distro_index]
-    version = select_version(distribution)
-    if not version:
-        return
+        components = args.get("components")
+        if components:
+            components = components.split(",")  # Split comma-separated components into a list
+        else:
+            print("Warning: No components specified. Continuing without specific components.")
 
-    repo_type = select_repo_type()
-    if not repo_type:
-        return
+        verbose = args.get("verbose", False)
 
-    enable_repository(distribution, version, repo_type)
+        # Enable verbose logging if requested
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+            console_handler = logging.StreamHandler()  # Log to console
+            console_handler.setLevel(logging.DEBUG)
+            logger.addHandler(console_handler)
+            print("Verbose mode enabled.")
 
-    components = list_components(distribution, version)
-    if not components:
-        return
+        print(f"Selected Distribution: {distribution}")
+        print(f"Selected Version: {version}")
+        print(f"Selected Repository Type: {repo_type}")
+        print(f"Selected Components: {', '.join(components) if components else 'None'}")
 
-    selected_components = select_components(components)
-    install_components(selected_components)
+        # Enable the repository
+        print(f"Enabling repository for {distribution} {version} ({repo_type})...")
+        enable_repository(distribution, version, repo_type)
+
+        # Install the components if specified
+        if components:
+            print("Installing selected components...")
+            install_components(components)
+        else:
+            print("No components to install.")
+    else:
+        # Interactive mode (unchanged)
+        print("Welcome to the Percona Installer (CLI Mode)")
+
+        list_distributions()
+        distro_index = int(input("Select a distribution: ")) - 1
+        if not (0 <= distro_index < len(SUPPORTED_DISTROS)):
+            print("Invalid distribution selection.")
+            return
+
+        distribution = list(SUPPORTED_DISTROS.keys())[distro_index]
+        version = select_version(distribution)
+        if not version:
+            return
+
+        repo_type = select_repo_type()
+        if not repo_type:
+            return
+
+        enable_repository(distribution, version, repo_type)
+
+        components = list_components(distribution, version)
+        if not components:
+            return
+
+        selected_components = select_components(components)
+        install_components(selected_components)
