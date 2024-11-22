@@ -23,16 +23,36 @@ def parse_arguments(args=None):
         print("`argparse` module is not available. Running interactively...")
         return None
 
+def display_percona_ascii_art():
+    """
+    Prints 'PERCONA' as ASCII art and provides a link to the support page and forum.
+    """
+    ascii_art = r"""
+	██████╗ ███████╗██████╗  ██████╗  ██████  ███╗   ██╗ █████╗ 
+	██╔══██╗██╔════╝██╔══██╗██╔════╝  ██╔═██╗ ████╗  ██║██╔══██╗
+	██████╔╝█████╗  ██████╔╝██║       ██║ ██║ ██╔██╗ ██║███████║
+	██╔═══╝ ██╔══╝  ██╔══██╗██║       ██║ ██║ ██║╚██╗██║██╔══██║
+	██║     ███████╗██║  ██║╚██████╗  ██████║ ██║ ╚████║██║  ██║
+	╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝   
+    """
+    support_link = "For official support, visit: https://www.percona.com/services/support"
+    forum_link = "For community support, visit: https://forums.percona.com/"
+    
+    print(ascii_art)
+    print(support_link)
+    print(forum_link)
+
 def main():
     """
     Main entry point for the installer.
     """
     args = parse_arguments()
-
+    
     # If arguments are parsed but empty or invalid, fallback to interactive mode
     if args and any(args.values()):
         try:
             run_cli(args)
+            display_percona_ascii_art()
         except Exception as e:
             print(f"Error in CLI mode: {e}")
             sys.exit(1)
