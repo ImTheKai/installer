@@ -3,6 +3,7 @@ import os
 import platform
 import subprocess
 import json
+import importlib
 
 # Configure logging
 logging.basicConfig(
@@ -20,7 +21,7 @@ SUPPORTED_DISTROS = {
     "Percona Distribution for PostgreSQL": "ppg-"
 }
 
-REPO_TYPES = ["main", "testing", "experimental"]
+REPO_TYPES = ["release", "testing", "experimental"]
 
 # Shared functions
 def detect_os():
@@ -149,6 +150,40 @@ def build_repo_command(distribution, version, repo_type):
     repo_name = f"{SUPPORTED_DISTROS[distribution]}{version}"
     return f"sudo percona-release enable {repo_name} {repo_type}"
 
+def get_available_solutions():
+    """
+    Retrieves a list of available solutions (Python files) in the defined directory.
+    :param directory: The directory to search for Python solution files.
+    :return: A list of solution names (without the .py extension).
+    """
+    directory = os.path.join(os.path.dirname(__file__), "solution")
+
+    try:
+        # List all .py files in the directory, excluding __init__.py
+        files = [
+            f[:-3] for f in os.listdir(directory) 
+            if f.endswith('.py') and f != '__init__.py'
+        ]
+        return files
+    except Exception as e:
+        print(f"Error accessing directory {directory}: {e}")
+        sys.exit(1)
+
+def call_function_by_name(function_name, pkg_manager, globals_dict):
+    """
+    Calls a function from the global namespace by its string name.
+    :param function_name: The name of the function as a string.
+    :param globals_dict: The global dictionary where the function is defined.
+    """
+    
+    # Get the function from globals
+    func = globals_dict.get(function_name)
+
+    # Check if the function exists and is callable
+    if func and callable(func):
+        return func(pkg_manager)
+    else:
+        raise ValueError(f"Function '{function_name}' is not defined or not callable.")
 
 def display_options(options, header="Options"):
     """
