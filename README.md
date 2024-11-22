@@ -17,6 +17,8 @@ The **Percona Installer** is a Python-based utility designed to simplify the ins
   - Supports argument-driven installation for scripting.
 - **Platform detection**:
   - Automatically identifies the operating system and selects the appropriate package manager.
+- **Solution Support**:
+  - Supports own custom solutions as a python script
 - **Extensible design**:
   - Modular architecture for adding new features or customizing behavior.
 - **Docker support**:
