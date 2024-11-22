@@ -93,10 +93,19 @@ percona_installer -r <repository> -p <product> -c <components> [--verbose]
    percona_installer -r release -p ppg-17.0 -c percona-postgresql-17
    ```
 
-2. Install Percona XtraDB Cluster 8.0:
+2. Install the nightly build of Percona PostgreSQL 17.0 and pg_tde and run the solution script pg_tde_demo:
+   ```bash
+   sudo percona_installer -r experimental -p ppg-17.0 -c percona-postgresql-17,percona-postgresql-17-pg-tde -s pg_tde_demo
+   ```
+
+3. Install Percona XtraDB Cluster 8.0:
    ```bash
    percona_installer main.py -r testing -p pxc-80 -c percona-xtradb-cluster-8.0 --verbose
    ```
+
+##### **`NOTE`**
+
+If you want to learn more about existing solutions, simply look into the solutions/ folder and read the description at the top of each file.   
 
 ---
 
@@ -125,7 +134,7 @@ The `components.json` file defines the available components for each product. Yo
 
 ---
 
-### Adding Your Own Solutions
+## Adding Your Own Solutions
 
 The project now supports a highly modular approach to defining solutions. You can easily create your own custom solutions by following these steps:
 
