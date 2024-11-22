@@ -83,7 +83,7 @@ percona_installer -r <repository> -p <product> -c <components> [--verbose]
   - `-r, --repository`: Specify the repository type (`main`, `testing`, `experimental`).
   - `-p, --product`: Specify the product and version (e.g., `ppg-17.0`, `ps-80`).
   - `-c, --components`: List of components to install (comma-separated).
-  - `-s, --solution`: Specify the solution you want to use [optional].
+  - `-s, --solution`: Specify the solution you want to use [optional] (e.g., `pg_tde_demo`).
   - `--verbose`: Enable verbose output for debugging.
 
 #### Examples:
