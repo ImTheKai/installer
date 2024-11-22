@@ -105,7 +105,7 @@ percona_installer -r <repository> -p <product> -c <components> [--verbose]
 
 ##### **`NOTE`**
 
-If you want to learn more about existing solutions, simply look into the solutions/ folder and read the description at the top of each file.   
+If you want to learn more about existing solutions, look into the `solutions/` folder and read the description at the top of each file.   
 
 ---
 
