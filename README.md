@@ -125,6 +125,28 @@ The `components.json` file defines the available components for each product. Yo
 
 ---
 
+### Adding Your Own Solutions
+
+The project now supports a highly modular approach to defining solutions. You can easily create your own custom solutions by following these steps:
+
+1. **Create a Python Script**:
+   - Navigate to the `solutions/` folder.
+   - Create a new Python file named after your desired solution. For example, if your solution is `my_solution`, the file should be named `my_solution.py`.
+
+2. **Define the Main Function**:
+   - The main function inside the file **must have the same name as the file**. For example:
+     ```python
+     # solutions/my_solution.py
+     def my_solution():
+         print("Hello from my_solution!")
+     ```
+
+3. **Automatic Detection**:
+   - The cli.py script dynamically imports all Python scripts under the solutions/ folder and makes them available for execution via the command line interface (CLI).
+     The function will automatically be loaded and callable by name.
+
+---
+
 ## Code Architecture
 
 ### **1. `main.py`**
