@@ -217,10 +217,7 @@ def run_cli(args=None):
         version = select_version(distribution)
         repo_type = select_repo_type()
         enable_repository(distribution, version, repo_type)
+        components = list_components(distribution, version)
+        selected_components = select_components(components)
         if components:
-            components = list_components(distribution, version)
-            selected_components = select_components(components)
             install_components(selected_components)
-        if solution:
-            pkg_manager = detect_os()
-            solution_functions[solution](pkg_manager)
