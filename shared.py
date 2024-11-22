@@ -20,7 +20,7 @@ SUPPORTED_DISTROS = {
     "Percona Distribution for PostgreSQL": "ppg-"
 }
 
-REPO_TYPES = ["main", "testing", "experimental"]
+REPO_TYPES = ["release", "testing", "experimental"]
 
 # Shared functions
 def detect_os():
