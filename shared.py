@@ -20,7 +20,7 @@ SUPPORTED_DISTROS = {
     "Percona Distribution for PostgreSQL": "ppg-"
 }
 
-REPO_TYPES = ["release", "testing", "experimental"]
+REPO_TYPES = ["main", "testing", "experimental"]
 
 # Shared functions
 def detect_os():
@@ -56,7 +56,6 @@ def detect_os():
         logger.error(f"Error detecting OS: {str(e)}")
         raise Exception(f"Unsupported OS: {str(e)}")
 
-
 def ensure_percona_release(output_callback):
     """
     Ensures the Percona Release package is downloaded and installed.
@@ -64,6 +63,20 @@ def ensure_percona_release(output_callback):
     """
     try:
         output_callback("Ensuring Percona Release package is installed...\n")
+
+        # Check if the percona-release command exists
+        result = subprocess.run(
+            ["which", "percona-release"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+        if result.returncode == 0:
+            output_callback("percona-release is already installed.\n")
+            logger.info("percona-release is already installed.")
+            return
+
+        # Detect the host OS
         package_manager = detect_os()
 
         if package_manager == "apt-get":
@@ -75,13 +88,22 @@ def ensure_percona_release(output_callback):
             output_callback("Checking for wget...\n")
             subprocess.run(["sudo", "apt-get", "install", "-y", "wget"], check=True)
 
-            # Download the package
-            output_callback("Downloading Percona Release package...\n")
-            subprocess.run(["wget", "https://repo.percona.com/apt/percona-release_latest.$(lsb_release -sc)_all.deb"], check=True)
+            # Get the codename of the OS
+            output_callback("Determining OS codename...\n")
+            codename = subprocess.check_output(["lsb_release", "-sc"], text=True).strip()
+
+            # Check if the Percona Release package is already downloaded
+            packagename = f"percona-release_latest.{codename}_all.deb"
+            if not os.path.exists(packagename):
+                output_callback("Downloading Percona Release package...\n")
+                url = f"https://repo.percona.com/apt/percona-release_latest.{codename}_all.deb"
+                subprocess.run(["wget", url], check=True)
+            else:
+                output_callback("Percona Release package already downloaded.\n")
 
             # Install the downloaded package
             output_callback("Installing Percona Release package...\n")
-            subprocess.run(["sudo", "dpkg", "-i", "percona-release_latest.$(lsb_release -sc)_all.deb"], check=True)
+            subprocess.run(["sudo", "dpkg", "-i", packagename], check=True)
 
             # Update package list again
             output_callback("Updating package list after installation...\n")
