@@ -48,6 +48,7 @@ The **Percona Installer** is a Python-based utility designed to simplify the ins
 
 2. Install required dependencies:
    ```bash
+   sudo apt install python3-pip
    sudo python3 -m pip install -r requirements.txt --break-system-packages
    ```
 
