@@ -76,7 +76,7 @@ The **Percona Installer** is a Python-based utility designed to simplify the ins
 Run the installer with command-line arguments for fully automated installation:
 
 ```bash
-python3 main.py -r <repository> -p <product> -c <components> [--verbose]
+percona_installer -r <repository> -p <product> -c <components> [--verbose]
 ```
 
 - **Arguments**:
@@ -89,23 +89,13 @@ python3 main.py -r <repository> -p <product> -c <components> [--verbose]
 
 1. Install Percona PostgreSQL 17.0:
    ```bash
-   python3 main.py -r release -p ppg-17.0 -c percona-postgresql-17
+   percona_installer -r release -p ppg-17.0 -c percona-postgresql-17
    ```
 
 2. Install Percona XtraDB Cluster 8.0:
    ```bash
-   python3 main.py -r testing -p pxc-80 -c percona-xtradb-cluster-8.0 --verbose
+   percona_installer main.py -r testing -p pxc-80 -c percona-xtradb-cluster-8.0 --verbose
    ```
-
-### GUI Mode
-
-Run the installer in GUI mode:
-
-```bash
-python3 main.py --gui
-```
-
-The GUI mode provides a step-by-step interactive interface for selecting distributions, versions, and components.
 
 ---
 

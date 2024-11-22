@@ -176,11 +176,18 @@ def run_cli(args=None):
         if not repo_type or repo_type not in REPO_TYPES:
             print(f"Error: Repository type is required and must be one of {REPO_TYPES}.")
             return
+        elif repo_type == "main":
+            repo_type = ""
 
         components = args.get("components", "").split(",") if args.get("components") else []
         if args.get("verbose"):
             logger.setLevel(logging.DEBUG)
             print("Verbose mode enabled.")
+        
+        print(f"Selected Distribution: {distribution}")
+        print(f"Selected Version: {version}")
+        print(f"Selected Repository Type: {repo_type}")
+        print(f"Selected Components: {', '.join(components) if components else 'None'}")
 
         enable_repository(distribution, version, repo_type)
         install_components(components)
