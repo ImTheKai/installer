@@ -1,9 +1,8 @@
 import logging
 import subprocess
 import json
-from shared import SUPPORTED_DISTROS, REPO_TYPES, build_repo_command, ensure_percona_release, detect_os, get_available_solutions, call_function_by_name
+from shared import SUPPORTED_DISTROS, REPO_TYPES, build_repo_command, ensure_percona_release, detect_os, get_available_solutions, load_solutions_functions
 from fetch_versions import fetch_all_versions
-from solution.pg_tde_demo import pg_tde_demo
 
 logger = logging.getLogger(__name__)
 
@@ -190,8 +189,8 @@ def run_cli(args=None):
                 print(f"Solution '{solution}' is not available. Available solutions are:")
                 print(", ".join(available_solutions))
                 return
-#            else:
-#                import_all_modules_from_directory(globals())
+            else:
+                solution_functions = load_solutions_functions('solution')
 
         if args.get("verbose"):
             logger.setLevel(logging.DEBUG)
@@ -208,7 +207,7 @@ def run_cli(args=None):
             install_components(components)
         if solution:
             pkg_manager = detect_os()
-            call_function_by_name(solution, pkg_manager, globals())
+            solution_functions[solution](pkg_manager)
     else:
         # Interactive mode
         print("Welcome to the Percona Installer (CLI Mode)")
@@ -224,4 +223,4 @@ def run_cli(args=None):
             install_components(selected_components)
         if solution:
             pkg_manager = detect_os()
-            call_function_by_name(solution, pkg_manager, globals())
+            solution_functions[solution](pkg_manager)
