@@ -106,6 +106,11 @@ percona_installer -r <repository> -p <product> -c <components> [--verbose]
    percona_installer main.py -r testing -p pxc-80 -c percona-xtradb-cluster-8.0 --verbose
    ```
 
+4. Install Percona Server for MySQL and Percona XtraBackup 8.0:
+   ```bash
+   sudo percona_installer -r release -p pdps-8.0 -c percona-server-server,percona-xtrabackup-80
+   ```
+
 ##### **`NOTE`**
 
 If you want to learn more about existing solutions, look into the `solutions/` folder and read the description at the top of each file.   
