@@ -4,6 +4,7 @@ import platform
 import subprocess
 import json
 import importlib
+import sys
 
 # Configure logging
 logging.basicConfig(
@@ -169,21 +170,40 @@ def get_available_solutions():
         print(f"Error accessing directory {directory}: {e}")
         sys.exit(1)
 
-def call_function_by_name(function_name, pkg_manager, globals_dict):
+def load_solutions_functions(directory, output_callback=print):
     """
-    Calls a function from the global namespace by its string name.
-    :param function_name: The name of the function as a string.
-    :param globals_dict: The global dictionary where the function is defined.
+    Dynamically load all Python modules and functions from the given directory.
     """
-    
-    # Get the function from globals
-    func = globals_dict.get(function_name)
+    directory = 'solution'
+    solutions = {}
+    directory_path = os.path.join(os.path.dirname(__file__), directory)
 
-    # Check if the function exists and is callable
-    if func and callable(func):
-        return func(pkg_manager)
-    else:
-        raise ValueError(f"Function '{function_name}' is not defined or not callable.")
+    # Ensure the directory exists
+    if not os.path.isdir(directory_path):
+        output_callback(f"Directory not found: {directory_path}")
+        return solutions
+
+    # Add directory to sys.path
+    sys.path.insert(0, directory_path)
+
+    # Import each .py file in the directory
+    for filename in os.listdir(directory_path):
+        if filename.endswith(".py") and filename != "__init__.py":
+            module_name = filename[:-3]  # Strip .py extension
+            try:
+                # Import the module dynamically
+                module = importlib.import_module(module_name)
+
+                # Collect all callable functions from the module
+                for attr_name in dir(module):
+                    attr = getattr(module, attr_name)
+                    if callable(attr) and not attr_name.startswith("_"):
+                        solutions[attr_name] = attr
+
+            except Exception as e:
+                output_callback(f"Error loading {module_name}: {e}")
+
+    return solutions
 
 def display_options(options, header="Options"):
     """

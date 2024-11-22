@@ -17,6 +17,8 @@ The **Percona Installer** is a Python-based utility designed to simplify the ins
   - Supports argument-driven installation for scripting.
 - **Platform detection**:
   - Automatically identifies the operating system and selects the appropriate package manager.
+- **Solution Support**:
+  - Supports own custom solutions as a python script
 - **Extensible design**:
   - Modular architecture for adding new features or customizing behavior.
 - **Docker support**:
@@ -46,6 +48,7 @@ The **Percona Installer** is a Python-based utility designed to simplify the ins
 
 2. Install required dependencies:
    ```bash
+   sudo apt install python3-pip
    sudo python3 -m pip install -r requirements.txt --break-system-packages
    ```
 
@@ -82,8 +85,8 @@ percona_installer -r <repository> -p <product> -c <components> [--verbose]
 - **Arguments**:
   - `-r, --repository`: Specify the repository type (`main`, `testing`, `experimental`).
   - `-p, --product`: Specify the product and version (e.g., `ppg-17.0`, `ps-80`).
-  - `-c, --components`: List of components to install (comma-separated).
-  - `-s, --solution`: Specify the solution you want to use [optional].
+  - `-c, --components`: List of components to install [optional] (comma-separated).
+  - `-s, --solution`: Specify the solution you want to use [optional] (e.g., `pg_tde_demo`).
   - `--verbose`: Enable verbose output for debugging.
 
 #### Examples:
@@ -93,10 +96,24 @@ percona_installer -r <repository> -p <product> -c <components> [--verbose]
    percona_installer -r release -p ppg-17.0 -c percona-postgresql-17
    ```
 
-2. Install Percona XtraDB Cluster 8.0:
+2. Install the nightly build of Percona PostgreSQL 17.0 and pg_tde and run the solution script pg_tde_demo:
+   ```bash
+   sudo percona_installer -r experimental -p ppg-17.0 -c percona-postgresql-17,percona-postgresql-17-pg-tde -s pg_tde_demo
+   ```
+
+3. Install Percona XtraDB Cluster 8.0:
    ```bash
    percona_installer main.py -r testing -p pxc-80 -c percona-xtradb-cluster-8.0 --verbose
    ```
+
+4. Install Percona Server for MySQL and Percona XtraBackup 8.0:
+   ```bash
+   sudo percona_installer -r release -p pdps-8.0 -c percona-server-server,percona-xtrabackup-80
+   ```
+
+##### **`NOTE`**
+
+If you want to learn more about existing solutions, look into the `solutions/` folder and read the description at the top of each file.   
 
 ---
 
@@ -122,6 +139,28 @@ The `components.json` file defines the available components for each product. Yo
   }
 }
 ```
+
+---
+
+## Adding Your Own Solutions
+
+The project now supports a highly modular approach to defining solutions. You can easily create your own custom solutions by following these steps:
+
+1. **Create a Python Script**:
+   - Navigate to the `solutions/` folder.
+   - Create a new Python file named after your desired solution. For example, if your solution is `my_solution`, the file should be named `my_solution.py`.
+
+2. **Define the Main Function**:
+   - The main function inside the file **must have the same name as the file**. For example:
+     ```python
+     # solutions/my_solution.py
+     def my_solution():
+         print("Hello from my_solution!")
+     ```
+
+3. **Automatic Detection**:
+   - The cli.py script dynamically imports all Python scripts under the solutions/ folder and makes them available for execution via the command line interface (CLI).
+     The function will automatically be loaded and callable by name.
 
 ---
 

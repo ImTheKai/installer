@@ -1,9 +1,8 @@
 import logging
 import subprocess
 import json
-from shared import SUPPORTED_DISTROS, REPO_TYPES, build_repo_command, ensure_percona_release, detect_os, get_available_solutions, call_function_by_name
+from shared import SUPPORTED_DISTROS, REPO_TYPES, build_repo_command, ensure_percona_release, detect_os, get_available_solutions, load_solutions_functions
 from fetch_versions import fetch_all_versions
-from solution.pg_tde_demo import pg_tde_demo
 
 logger = logging.getLogger(__name__)
 
@@ -152,13 +151,13 @@ def run_cli(args=None):
         # Argument-driven CLI mode
         product = args.get("product")
         if not product:
-            print("Error: Product is required (e.g., ppg-17.0, ps-80).")
+            raise ValueError("Error: Product is required (e.g., ppg-17.0, ps-80).")
             return
 
         try:
             prefix, version = product.split("-", 1)
         except ValueError:
-            print(f"Error: Invalid product format '{product}'. Expected format: <prefix>-<version> (e.g., ppg-17.0).")
+            raise ValueError(f"Error: Invalid product format '{product}'. Expected format: <prefix>-<version> (e.g., ppg-17.0).")
             return
 
         PREFIX_TO_DISTRO = {
@@ -170,12 +169,12 @@ def run_cli(args=None):
 
         distribution = PREFIX_TO_DISTRO.get(prefix)
         if not distribution:
-            print(f"Error: Invalid distribution prefix '{prefix}'.")
+            raise ValueError(f"Error: Invalid distribution prefix '{prefix}'.")
             return
 
         repo_type = args.get("repository")
         if not repo_type or repo_type not in REPO_TYPES:
-            print(f"Error: Repository type is required and must be one of {REPO_TYPES}.")
+            raise ValueError(f"Error: Repository type is required and must be one of {REPO_TYPES}.")
             return
 
         components = args.get("components", "").split(",") if args.get("components") else []
@@ -187,11 +186,11 @@ def run_cli(args=None):
 
             # Check if the parsed solution exists
             if solution not in available_solutions:
-                print(f"Solution '{solution}' is not available. Available solutions are:")
-                print(", ".join(available_solutions))
+                raise ValueError(f"Solution '{solution}' is not available. Available solutions are:")
+                raise ValueError(", ".join(available_solutions))
                 return
-#            else:
-#                import_all_modules_from_directory(globals())
+            else:
+                solution_functions = load_solutions_functions('solution')
 
         if args.get("verbose"):
             logger.setLevel(logging.DEBUG)
@@ -204,9 +203,11 @@ def run_cli(args=None):
         print(f"Selected Solution: {solution}")
 
         enable_repository(distribution, version, repo_type)
-        install_components(components)
-        pkg_manager = detect_os()
-        call_function_by_name(solution, pkg_manager, globals())
+        if components:
+            install_components(components)
+        if solution:
+            pkg_manager = detect_os()
+            solution_functions[solution](pkg_manager)
     else:
         # Interactive mode
         print("Welcome to the Percona Installer (CLI Mode)")
@@ -218,6 +219,5 @@ def run_cli(args=None):
         enable_repository(distribution, version, repo_type)
         components = list_components(distribution, version)
         selected_components = select_components(components)
-        install_components(selected_components)
-        pkg_manager = detect_os()
-        call_function_by_name(solution, pkg_manager, globals())
+        if components:
+            install_components(selected_components)
