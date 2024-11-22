@@ -15,6 +15,7 @@ def parse_arguments(args=None):
         parser.add_argument('-r', '--repository', type=str, help="main/testing/experimental")
         parser.add_argument('-p', '--product', type=str, help="ppg-17.0/ps-80/pxc-80/psmdb-80")
         parser.add_argument('-c', '--components', type=str, help="Comma-separated list of components")
+        parser.add_argument('-s', '--solution', type=str, help="pg_tde_demo")
         parser.add_argument('--verbose', action='store_true', help="Enable verbose output")
         parsed_args = parser.parse_args(args)
         return vars(parsed_args)

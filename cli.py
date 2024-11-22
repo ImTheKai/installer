@@ -1,8 +1,9 @@
 import logging
 import subprocess
 import json
-from shared import SUPPORTED_DISTROS, REPO_TYPES, build_repo_command, ensure_percona_release, detect_os
+from shared import SUPPORTED_DISTROS, REPO_TYPES, build_repo_command, ensure_percona_release, detect_os, get_available_solutions, call_function_by_name
 from fetch_versions import fetch_all_versions
+from solution.pg_tde_demo import pg_tde_demo
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +179,20 @@ def run_cli(args=None):
             return
 
         components = args.get("components", "").split(",") if args.get("components") else []
+        
+        solution = args.get("solution")
+        if solution:
+            # Get the list of available solutions
+            available_solutions = get_available_solutions()
+
+            # Check if the parsed solution exists
+            if solution not in available_solutions:
+                print(f"Solution '{solution}' is not available. Available solutions are:")
+                print(", ".join(available_solutions))
+                return
+#            else:
+#                import_all_modules_from_directory(globals())
+
         if args.get("verbose"):
             logger.setLevel(logging.DEBUG)
             print("Verbose mode enabled.")
@@ -186,9 +201,12 @@ def run_cli(args=None):
         print(f"Selected Version: {version}")
         print(f"Selected Repository Type: {repo_type}")
         print(f"Selected Components: {', '.join(components) if components else 'None'}")
+        print(f"Selected Solution: {solution}")
 
         enable_repository(distribution, version, repo_type)
         install_components(components)
+        pkg_manager = detect_os()
+        call_function_by_name(solution, pkg_manager, globals())
     else:
         # Interactive mode
         print("Welcome to the Percona Installer (CLI Mode)")
@@ -201,3 +219,5 @@ def run_cli(args=None):
         components = list_components(distribution, version)
         selected_components = select_components(components)
         install_components(selected_components)
+        pkg_manager = detect_os()
+        call_function_by_name(solution, pkg_manager, globals())
