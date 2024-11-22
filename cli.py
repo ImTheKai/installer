@@ -204,9 +204,11 @@ def run_cli(args=None):
         print(f"Selected Solution: {solution}")
 
         enable_repository(distribution, version, repo_type)
-        install_components(components)
-        pkg_manager = detect_os()
-        call_function_by_name(solution, pkg_manager, globals())
+        if components:
+            install_components(components)
+        if solution:
+            pkg_manager = detect_os()
+            call_function_by_name(solution, pkg_manager, globals())
     else:
         # Interactive mode
         print("Welcome to the Percona Installer (CLI Mode)")
@@ -216,8 +218,10 @@ def run_cli(args=None):
         version = select_version(distribution)
         repo_type = select_repo_type()
         enable_repository(distribution, version, repo_type)
-        components = list_components(distribution, version)
-        selected_components = select_components(components)
-        install_components(selected_components)
-        pkg_manager = detect_os()
-        call_function_by_name(solution, pkg_manager, globals())
+        if components:
+            components = list_components(distribution, version)
+            selected_components = select_components(components)
+            install_components(selected_components)
+        if solution:
+            pkg_manager = detect_os()
+            call_function_by_name(solution, pkg_manager, globals())
