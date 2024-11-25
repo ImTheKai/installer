@@ -65,6 +65,7 @@ def main():
 
         if choice == "1":
             run_cli()  # Interactive CLI mode
+            display_percona_ascii_art()
         elif choice == "2":
             run_gui()
         else:

@@ -186,7 +186,7 @@ def run_cli(args=None):
 
             # Check if the parsed solution exists
             if solution not in available_solutions:
-                raise ValueError(f"Solution '{solution}' is not available. Available solutions are:")
+                print(f"Solution '{solution}' is not available. Available solutions are:")
                 raise ValueError(", ".join(available_solutions))
                 return
             else:

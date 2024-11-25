@@ -27,7 +27,7 @@
   },
   "Percona Distribution for PostgreSQL": {
     "components": [
-      "percona-postgresql{major}-server",
+      "percona-postgresql-{major}",
       "postgresql-commons",
       "percona-pgbackrest",
       "pg_stat_monitor",
