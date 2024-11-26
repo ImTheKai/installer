@@ -168,9 +168,6 @@ def run_cli(args=None):
         }
 
         distribution = PREFIX_TO_DISTRO.get(prefix)
-        if not distribution:
-            raise ValueError(f"Error: Invalid distribution prefix '{prefix}'.")
-            return
 
         repo_type = args.get("repository")
         if not repo_type or repo_type not in REPO_TYPES:
