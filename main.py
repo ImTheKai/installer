@@ -12,7 +12,7 @@ def parse_arguments(args=None):
     try:
         import argparse
         parser = argparse.ArgumentParser(description="Percona Installer Argument Parser")
-        parser.add_argument('-r', '--repository', type=str, help="main/testing/experimental")
+        parser.add_argument('-r', '--repository', type=str, help="release/testing/experimental")
         parser.add_argument('-p', '--product', type=str, help="ppg-17.0/ps-80/pxc-80/psmdb-80")
         parser.add_argument('-c', '--components', type=str, help="Comma-separated list of components")
         parser.add_argument('-s', '--solution', type=str, help="pg_tde_demo")
